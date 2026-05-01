@@ -1,9 +1,14 @@
+// import LoginForm from "../ui/login-form";
+// import { signupAction } from "../lib/signup";
+
+//   return <LoginForm mode="signup" formAction={signupAction} />;
+// }
+
 import AcmeLogo from "@/app/ui/acme-logo";
 import LoginForm from "@/app/ui/login-form";
-import { authenticate } from "@/app/lib/action";
 import { Suspense } from "react";
 
-export default function LoginPage() {
+export default function SignupPage() {
   return (
     <main className="flex items-center justify-center md:h-screen">
       <div className="relative mx-auto flex w-full max-w-[400px] flex-col space-y-2.5 p-4 md:-mt-32">
@@ -13,12 +18,12 @@ export default function LoginPage() {
           </div>
         </div>
         <Suspense>
-          <LoginForm mode="login" />
+          <LoginForm mode="signup" />
         </Suspense>
         <div className="text-center mt-4">
-          <span>Don't have an account? </span>
-          <a href="/signup" className="text-blue-600 hover:underline">
-            Sign up
+          <span>Already have an account? </span>
+          <a href="/login" className="text-blue-600 hover:underline">
+            Log in
           </a>
         </div>
       </div>
