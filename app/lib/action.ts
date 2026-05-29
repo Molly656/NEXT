@@ -1,12 +1,10 @@
 "use server";
 import { z } from "zod";
-import postgres from "postgres";
+import { sql } from "@/app/lib/db";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { signIn } from "@/auth";
 import { AuthError } from "next-auth";
-
-const sql = postgres(process.env.POSTGRES_URL!, { ssl: "require" });
 
 const FormSchema = z.object({
   id: z.string(),
@@ -30,8 +28,6 @@ export type State = {
     customerId?: string[];
     amount?: string[];
     status?: string[];
-    name?: string[];
-    email?: string[];
   };
   message?: string | null;
 };
@@ -65,8 +61,8 @@ export async function createInvoice(prevState: State, formData: FormData) {
 
   try {
     await sql`
-    INSERT INTO invoices (customer_id, amount, status, date)
-    VALUES (${customerId}, ${amountInCents}, ${status}, ${date}`;
+      INSERT INTO invoices (customer_id, amount, status, date)
+      VALUES (${customerId}, ${amountInCents}, ${status}, ${date})`;
   } catch (error) {
     console.error(error);
     return {
@@ -95,13 +91,12 @@ export async function createCustomer(
 
   const { name, email } = validatedFields.data;
 
-  // Default image URL for new customers
   const imageUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=0D8ABC&color=fff`;
 
   try {
     await sql`
-    INSERT INTO customers (name, email, image_url)
-    VALUES (${name}, ${email}, ${imageUrl})`;
+      INSERT INTO customers (name, email, image_url)
+      VALUES (${name}, ${email}, ${imageUrl})`;
   } catch (error) {
     console.error(error);
     return {
@@ -114,27 +109,38 @@ export async function createCustomer(
 }
 
 export async function updateInvoice(id: string, formData: FormData) {
-  const { customerId, amount, status } = UpdateInvoice.parse({
+  const validatedFields = UpdateInvoice.safeParse({
     customerId: formData.get("customerId"),
     amount: formData.get("amount"),
     status: formData.get("status"),
   });
 
+  if (!validatedFields.success) {
+    throw new Error("Invalid form data. Failed to Update Invoice.");
+  }
+
+  const { customerId, amount, status } = validatedFields.data;
   const amountInCents = amount * 100;
+
   try {
     await sql`
-    UPDATE invoices SET customer_id = ${customerId}, amount = ${amountInCents}, status = ${status}
-    WHERE id = ${id}`;
+      UPDATE invoices SET customer_id = ${customerId}, amount = ${amountInCents}, status = ${status}
+      WHERE id = ${id}`;
   } catch (error) {
     console.error(error);
-    return { message: "Database Error: Failed to Update Invoice." };
+    throw new Error("Database Error: Failed to Update Invoice.");
   }
   revalidatePath("/dashboard/invoices");
   redirect("/dashboard/invoices");
 }
 
 export async function deleteInvoice(id: string) {
-  await sql`DELETE FROM invoices WHERE id = ${id}`;
+  try {
+    await sql`DELETE FROM invoices WHERE id = ${id}`;
+  } catch (error) {
+    console.error(error);
+    throw new Error("Database Error: Failed to Delete Invoice.");
+  }
   revalidatePath("/dashboard/invoices");
 }
 
@@ -156,7 +162,3 @@ export async function authenticate(
     throw error;
   }
 }
-// Test it out:
-// console.log(rawFormData);
-//console.log(typeof rawFormData.amount);
-//}

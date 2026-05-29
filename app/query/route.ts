@@ -20,11 +20,11 @@ export async function GET() {
       success: true,
       invoices,   // will include amount + customer name
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error("DB query failed:", error);
     return Response.json({
       success: false,
-      error: error.message,
+      error: error instanceof Error ? error.message : "Unknown error",
     }, { status: 500 });
   }
 }
